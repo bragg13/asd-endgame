@@ -26,12 +26,12 @@ int N;              // numero di citta
 int M;              // numero di pietre
 int S;              // citta di partenza
 int capacita;       // capacità dello zain ehm guanto
-int R;              // energia consumata per unita di tempo
+double R;              // energia consumata per unita di tempo
 double vmax, vmin;
 
-vector<stone> stones;     // lista (temp!) delle pietre raccolte
+vector<stone> stones;                       // lista (temp!) delle pietre raccolte
 vector<vector<int>> stonesLocation;         // per ogni pietra mi segno (con un array) quali città ce l'hanno
-int **matrix = new int*[N];                               // matrice di adiacenza
+int **matrix;                               // matrice di adiacenza
 
 double energia;     // energia RACCOLTA
 int tempoImpiegato; // tempo totale
@@ -47,8 +47,12 @@ int tempoImpiegato; // tempo totale
 void getInput(){
     ifstream in("input0.txt");
     in >> N >> S;                               // prima riga
-    in >> M >> capacita >> R >> vmin >> vmax;   // seconda riga
-
+    in >> M;
+    in >> capacita;
+    in >> R;
+    in >> vmin;
+    in >> vmax;   
+    
     // massa/energia di ogni pietra
     int m, e;
     for(int i=0; i<M; i++){
@@ -63,26 +67,29 @@ void getInput(){
     stonesLocation = vector<vector<int>>(M);                // inizializzo l'array di locations
     int listlen;
     int tmpCity;
-    for(int i=0; i<2*M; i++){ 
+    for(int i=0; i<M; i++){ 
         in >> listlen;
         for (int j=0; j<listlen; j++){
             // la pietra `i` è presente nella città in[j]
             in >> tmpCity;
+            cout << tmpCity << endl;
             stonesLocation[i].push_back(tmpCity);
         }
     }
 
     // distanze tra le citta
-    
+    matrix = new int*[N];
+    int tmp;
+
+    for(int i=0; i<N; i++){
+        matrix[i] = new int[N];
+    }
 
     for(int i=1; i<N; i++){
-        matrix[i] = new int[N];
-        
         for(int j=0; j<i; j++){
-            int tmp;
             in >> tmp;
-            // matrix[i][j] = tmp;
-            // matrix[j][i] = tmp;
+            matrix[i][j] = tmp;
+            matrix[j][i] = tmp;
         }
 
     }
@@ -102,20 +109,6 @@ int getVelocita(int carriedStones){
 }
 
 void getInfos(){
-    int N;              // numero di citta
-int M;              // numero di pietre
-int S;              // citta di partenza
-int capacita;       // capacità dello zain ehm guanto
-int R;              // energia consumata per unita di tempo
-double vmax, vmin;
-
-vector<stone> stones = vector<stone>();     // lista (temp!) delle pietre raccolte
-vector<vector<int>> stonesLocation;         // per ogni pietra mi segno (con un array) quali città ce l'hanno
-int **matrix;                               // matrice di adiacenza
-
-double energia;     // energia RACCOLTA
-int tempoImpiegato; // tempo totale
-
     cout << "Numero di città: " << endl;
     cout << "Città di partenza: " << endl;
     
@@ -134,8 +127,8 @@ int tempoImpiegato; // tempo totale
     // grafo
     for(int i=0; i<N; i++){
         cout << "[Citta] " << i << ":\n"; 
-        for(int j=i; j<N; j++){
-            cout << "  - " << j << ": " << matrix[i][j] << endl;
+        for(int j=0; j<N; j++){
+            cout << "  " << i << " to " << j << ": " << matrix[i][j] << endl;
         }
     }
 
@@ -145,6 +138,6 @@ int tempoImpiegato; // tempo totale
 
 int main(){
     getInput();
-    // getInfos();
+    getInfos();
     return 0;
 }
