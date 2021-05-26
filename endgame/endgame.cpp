@@ -21,6 +21,7 @@ void getInput();
 void writeSolution();
 int getVelocita();
 void getInfos();
+vector<int> getBestPath();
 
 int N;              // numero di citta
 int M;              // numero di pietre
@@ -35,9 +36,6 @@ int **matrix;                               // matrice di adiacenza
 
 double energia;     // energia RACCOLTA
 int tempoImpiegato; // tempo totale
-
-
-
 
 
 
@@ -72,7 +70,6 @@ void getInput(){
         for (int j=0; j<listlen; j++){
             // la pietra `i` è presente nella città in[j]
             in >> tmpCity;
-            cout << tmpCity << endl;
             stonesLocation[i].push_back(tmpCity);
         }
     }
@@ -85,17 +82,21 @@ void getInput(){
         matrix[i] = new int[N];
     }
 
+    for(int i=0; i<N; i++){
+        matrix[i][i] = 0;
+    }
+
     for(int i=1; i<N; i++){
         for(int j=0; j<i; j++){
             in >> tmp;
             matrix[i][j] = tmp;
             matrix[j][i] = tmp;
         }
-
     }
-    
+
     in.close();
 }
+
 
 void writeSolution(){
     ofstream out("output.txt");
@@ -104,16 +105,18 @@ void writeSolution(){
     out.close();
 }
 
+
 int getVelocita(int carriedStones){
     return vmax-(carriedStones*((vmax-vmin)/capacita));
 }
 
+
 void getInfos(){
-    cout << "Numero di città: " << endl;
-    cout << "Città di partenza: " << endl;
+    cout << "Numero di città: " << N << endl;
+    cout << "Città di partenza: " << S << endl;
     
-    cout << "Numero di pietre: " << endl;
-    cout << "Capacita' del guanto: " << endl;
+    cout << "Numero di pietre: " << M << endl;
+    cout << "Capacita' del guanto: " << capacita << endl;
     
     // pietre
     for(int i=0; i<M; i++){
@@ -132,12 +135,73 @@ void getInfos(){
         }
     }
 
-    cout << endl;
+    cout << "==========" << endl;
+    for(int i=0; i<N; i++){
+        for(int j=0; j<N; j++){
+            cout << matrix[i][j];
+        }
+        cout << endl;
+    }
+    cout << "==========" << endl;
+}
+
+
+/**
+ * Attraverso il grafo e trovo un percorso ottimale.
+ * - versione 1: prendo sempre il ramo piu corto [greedy] O(n^2)
+ * - versione 2: [backtracking]
+ */
+vector<int> getBestPath(){
+    vector<int> path;
+    bool visited[N];
+
+    // init
+    for(int i=0; i<N; i++){
+        // path[i] = -1;   // -inf
+        visited[i] = false;
+    }
+
+    // path[S] = 0;    // partenza
+    path.push_back(S);
+    visited[S] = true;
+
+    for(int node=S; node<N; node++){
+        // passo i nodi a fianco
+        int min = 1000000;
+        int minIndex = 0;
+
+        for(int j=0; j<N; j++){
+            // poi posso evitare di controllare l'intera riga perche so gia che meta/+ sono 0 
+            // cout << "min=" << min << ", Matrix[node][j] = " << matrix[node][j] << endl;
+            if (matrix[node][j] != 0 && !visited[j] && min > matrix[node][j]){
+                min = matrix[j][node];
+                minIndex = j;
+            }
+        }
+        
+        // la prossima citta è quella piu breve
+        // cout << "minIndex:" << minIndex << endl;
+        path.push_back(minIndex);
+        visited[minIndex] = true;
+    }
+
+    cout << "PATH=";
+    for(int i=0; i<N; i++){
+        cout << path[i] << " ";
+    }
+
+    path.push_back(S);
+    return path;
 }
 
 
 int main(){
-    getInput();
-    getInfos();
+    getInput(); // get input
+    getInfos(); // prints basic info bout the graph
+
+    vector<int> path = getBestPath();
+    // collectGems(path);
+    writeSolution();
+    
     return 0;
 }
