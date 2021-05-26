@@ -58,12 +58,14 @@ void getInput(){
 
     //memorizza le distanze delle città
     int d;
+    graph[0].d.push_back(0);
     for(int i = 1;i < N;i++){
         for(int j = 0;j < i;j++){
             f >> d;
             graph[i].d.push_back(d);
             graph[j].d.push_back(d);
         }
+        graph[i].d.push_back(0)
     }
 
 }
