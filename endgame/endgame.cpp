@@ -18,7 +18,6 @@ int S;              // citta di partenza
 int capacita;       // capacità dello zain ehm guanto
 double R;              // energia consumata per unita di tempo
 double vmax, vmin;
-double vcost;
 
 vector<int> carriedStones;                  // ogni indice è una citta e mi dice qual è il peso locale trasportato
 vector<stone> stones;                       // lista (temp!) delle pietre raccolte
@@ -88,7 +87,6 @@ void getInput(){
         }
     }
 
-    vcost = (vmax-vmin)/capacita;
     takenStones = vector<int>(M);
     for(int i=0; i<M; i++){
         takenStones[i] = -1;

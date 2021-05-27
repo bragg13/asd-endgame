@@ -1,0 +1,24 @@
+9   E(-10666.67)    G(0.00)         T(133.33)       maxG(36868.00)      minT(133.33)    maxT(400.00)        randMaxT(291.45)        scoreRandMaxT(0.26)
+10  E(84546514.53)  G(84549182.00)  T(133.37)       maxG(194731166.00)  minT(133.33)    maxT(160.00)        randMaxT(146.04)        scoreRandMaxT(0.43)
+1   E(15.60)        G(18.00)        T(2.40)         maxG(25.00)         minT(1.09)      maxT(35.00)         randMaxT(8.24)          scoreRandMaxT(0.74)
+
+8   E(9045.27)      G(14539.00)     T(274.69)       maxG(17205.00)      minT(250.00)    maxT(1000.00)       randMaxT(701.86)        scoreRandMaxT(0.88)
+20  E(9406.00)      G(9406.00)      T(30186.75)     maxG(10610.00)      minT(19770.00)  maxT(2214690.00)    randMaxT(949627.85)     scoreRandMaxT(0.89)
+12  E(531716.69)    G(533719.00)    T(100.12)       maxG(580434.00)     minT(100.00)    maxT(157.89)        randMaxT(130.00)        scoreRandMaxT(0.92)
+15  E(-75063.91     G(15835.00)     T(1817.98)      maxG(15840.00)      minT(1800.00)   maxT(2000.00)       randMaxT(1974.01)       scoreRandMaxT(0.96)
+18  E(30943.15)     G(51371.00)     T(1021.39)      maxG(56056.00)      minT(487.00)    maxT(37200.00)      randMaxT(16049.83)      scoreRandMaxT(0.96)
+
+16  E(-12806.44)    G(3432.00)      T(324.77)       maxG(3432.00)       minT(320.00)    maxT(444.44)        randMaxT(396.59)        scoreRandMaxT(0.97)
+17  E(7327.52)      G(15909.00)     T(429.07)       maxG(17138.00)      minT(254.00)    maxT(18940.00)      randMaxT(8015.98)       scoreRandMaxT(0.97)
+3   E(34073.00)     G(34073.00)     T(200.00)       maxG(34897.00)      minT(200.00)    maxT(200.00)        randMaxT(200.00)        scoreRandMaxT(0.98)
+14  E(1514.70)      G(1815.00)      T(600.59)       maxG(1904.00)       minT(500.30)    maxT(49995.00)      randMaxT(9786.22)       scoreRandMaxT(0.98)
+
+2   E(4403.00)      G(4403.00)      T(100.00)       maxG(4457.00)       minT(100.00)    maxT(100.00)        randMaxT(100.00)        scoreRandMaxT(0.99)
+19  E(234724.54)    G(364889.00)    T(6508.22)      maxG(366798.00)     minT(3266.50)   maxT(729014.00)     randMaxT(323342.21)     scoreRandMaxT(0.99)
+4   E(150466.00)    G(150466.00)    T(500.00)       maxG(151228.00)     minT(500.00)    maxT(500.00)        randMaxT(500.00)        scoreRandMaxT(0.99)
+11  E(-2990.59)     G(7590.00)      T(529.03)       maxG(7688.00)       minT(450.00)    maxT(50000.00)      randMaxT(8405.34)       scoreRandMaxT(0.99)
+13  E(-6106.23      G(2303.00)      T(168.18)       maxG(2305.00)       minT(166.67)    maxT(2000.00)       randMaxT(1082.42)       scoreRandMaxT(1.00)
+
+5   E(-516.00)      G(0.00)         T(516.00)       maxG(0.00)          minT(500.00)    maxT(4000.00)       randMaxT(2132.00)       scoreRandMaxT(0.99) c=0
+6   E(-844.00)      G(0.00)         T(844.00)       maxG(0.00)          minT(800.00)    maxT(10400.00)      randMaxT(5411.00)       scoreRandMaxT(0.99) c=0
+7   E(-1248.00)     G(0.00)         T(1248.00)      maxG(0.00)          minT(1000.00)   maxT(50000.00)      randMaxT(25294.00)      scoreRandMaxT(0.99) c=0
