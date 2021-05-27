@@ -147,7 +147,7 @@ void writeSolution(vector<int> &path, vector<int> &distance){
     
     for(int i=0; i<N; i++){
         int citta = path[i];
-        double v = getVelocita(pesosofar+carriedStones[citta]);
+        double v = capacita==0 ? vmax : getVelocita(pesosofar+carriedStones[citta]);
         double t = distance[i]/v;
         tempoImpiegato += t;
         pesosofar += carriedStones[citta];
@@ -164,16 +164,16 @@ void writeSolution(vector<int> &path, vector<int> &distance){
     #endif
 
     // caso limite: capacità=0
-    if(capacita == 0){
-        out << scientific << setprecision(10) << 0.00 << " "; 
-        out << scientific << setprecision(10) << 0.00 << " "; 
-        out << scientific << setprecision(10) << 0.00 << endl; 
-    } else {
+    // if(capacita == 0){
+    //     out << scientific << setprecision(10) << 0.00 << " "; 
+    //     out << scientific << setprecision(10) << 0.00 << " "; 
+    //     out << scientific << setprecision(10) << 0.00 << endl; 
+    // } else {
         double energiaFinale = energia - (R*tempoImpiegato);
         out << scientific << setprecision(10) << energiaFinale << " "; 
         out << scientific << setprecision(10) << energia << " "; 
         out << scientific << setprecision(10) << tempoImpiegato << endl; 
-    }
+    // }
 
     // lista pietre
     for(int i=0; i<M; i++){
