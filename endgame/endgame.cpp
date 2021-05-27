@@ -131,8 +131,8 @@ void getInfos(){
 }
 
 
-int getVelocita(int carriedStones){
-    return vmax-(carriedStones*vcost);
+double getVelocita(int carriedStones){
+    return vmax-((carriedStones*(vmax-vmin))/capacita);
 }
 
 
@@ -140,7 +140,7 @@ void writeSolution(vector<int> path){
     ofstream out("output.txt");
 
     // calcolo l'energia
-    double energiaFinale = energia - R*tempoImpiegato;
+    double energiaFinale = energia - (R*tempoImpiegato);
     out << scientific << setprecision(10) << energiaFinale << " "; 
     out << scientific << setprecision(10) << energia << " "; 
     out << scientific << setprecision(10) << tempoImpiegato << endl; 
@@ -206,7 +206,7 @@ void collectGems(vector<int> &path, vector<int> &distance){
             if(takenStones[cities[path[i]][j]] == -1){
                 // prendo il fattore zeta=e/pd
                 
-                double zeta = ((double) s.energia) / ( s.massa*distance[i] );
+                double zeta = ((double) s.energia) / ( s.massa*distsofar );  // th. devo moltiplicare per distsofar perche è la somma delle distanze da qui alla fine
 
                 #if (DEBUG==1)
                 cout << "ZETA=" << zeta << ", e=" << s.energia << ", m=" << s.massa << endl << endl;
@@ -236,7 +236,7 @@ void collectGems(vector<int> &path, vector<int> &distance){
             energia += stones[stoneIndex].energia;
 
             // ho raccolto tale pietra in imax citta
-            takenStones[stoneIndex] = path[i];     // path[i] è la citta in cui io son
+            takenStones[stoneIndex] = path[i];     // path[i] è la citta in cui sono
 
             // calcolo il tempo
             double v = getVelocita(capacita-capacitaLeft);
