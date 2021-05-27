@@ -3,7 +3,7 @@
 #include <iomanip>      // per i decimali
 #include <fstream>
 using namespace std;
-#define DEBUG 1
+#define DEBUG 0
 
 struct stone {
     int energia, massa;
@@ -18,14 +18,13 @@ double R;              // energia consumata per unita di tempo
 double vmax, vmin;
 double vcost;
 
+vector<int> carriedStones;                  // ogni indice è una citta e mi dice qual è il peso locale trasportato
 vector<stone> stones;                       // lista (temp!) delle pietre raccolte
 vector<int> takenStones;                    // di base -1, se raccolgo una pietra metto in che citta l'ho raccolta
 vector<vector<int>> cities;                 // per ogni citta mi segno (con un array) quali pietre ha (gli ID delle pietre)
 int **matrix;                               // matrice di adiacenza
 
 double energia;     // energia RACCOLTA
-double tempoImpiegato; // tempo totale
-
 
 
 void getInput(){
@@ -48,10 +47,12 @@ void getInput(){
     }
 
     // dove stanno le pietre?
-    cities = vector<vector<int>>();                // inizializzo l'array di locations
+    cities = vector<vector<int>>();                // inizializzo l'array di locations e carriedStones
+    carriedStones = vector<int>();
     for(int i=0; i<N; i++){
         vector<int> row;
         cities.push_back(row);
+        carriedStones.push_back(0);
     }
 
     int listlen;
@@ -130,15 +131,31 @@ void getInfos(){
 }
 
 
-double getVelocita(int carriedStones){
-    return vmax-((carriedStones*(vmax-vmin))/capacita);
+double getVelocita(int _carriedStones){
+    return vmax-((_carriedStones*(vmax-vmin))/capacita);
 }
 
 
-void writeSolution(vector<int> path){
+void writeSolution(vector<int> &path, vector<int> &distance){
     ofstream out("output.txt");
 
+    // calcolo il tempo ripercorrendo la path
+    int pesosofar = 0;
+    double tempoImpiegato;
+    for(int i=0; i<N; i++){
+        int citta = path[i];
+        double v = getVelocita(pesosofar+carriedStones[citta]);
+        double t = distance[i]/v;
+        tempoImpiegato += t;
+        pesosofar += carriedStones[citta];
+
+        // cout << "Citta: " << path[i] << " Peso: " << pesosofar << " Velocita:" << v << " Tempo:" << t << endl;
+
+    }
+
     // calcolo l'energia
+    // cout << "energia " << energia << endl;
+    // cout << "tempoImpiegato " << tempoImpiegato << endl;
     double energiaFinale = energia - (R*tempoImpiegato);
     out << scientific << setprecision(10) << energiaFinale << " "; 
     out << scientific << setprecision(10) << energia << " "; 
@@ -181,9 +198,7 @@ void collectGems(vector<int> &path, vector<int> &distance){
     // NON DEVO ANDARE AL CONTRARIO PERCHE COSI PRENDEREI ALLA FINE QUELLE CON LA DISTANZA MINORE
     // QUANDO INVECE DOVREI PRENDERE QUELLE PIU PESANTI VERSO LA FINE
 
-
     for(int i=path.size()-2; i>=0; i--){    // -2 perche non parto dall'ultimo, che è la partenza aka S
-        // citta: 1, ho {0,1,2}
         maxsofar = 0;
         distsofar += distance[i];           // i e basta perche len(distance) == len(path)-{Sin, Sfin} 
         zetamax = -100;
@@ -237,18 +252,17 @@ void collectGems(vector<int> &path, vector<int> &distance){
             // ho raccolto tale pietra in imax citta
             takenStones[stoneIndex] = path[i];     // path[i] è la citta in cui sono
 
-            // calcolo il tempo
-            double v = getVelocita(capacita-capacitaLeft);
-            double t = distance[i]/v;
-            tempoImpiegato += t;
+            carriedStones[path[i]] = stones[stoneIndex].massa;
+
+            
 
             #if (DEBUG==1)
-            cout << "Ho preso la pietra " << stoneIndex << " nella citta " << path[i] << " in tempo " << t << endl;
+            cout << "Ho preso la pietra " << stoneIndex << " nella citta " << path[i] << endl;
             #endif
         }
     }
 
-    writeSolution(path);
+    writeSolution(path, distance);
 
 }
 
@@ -322,11 +336,7 @@ void getBestPath(){
 
 
 int main(){
-    getInput(); // get input
-    // getInfos(); // prints basic info bout the graph
-
+    getInput();
     getBestPath();
-    // collectGems(path);
-    
     return 0;
 }
