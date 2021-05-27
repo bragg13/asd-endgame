@@ -17,11 +17,11 @@ struct stone {
 /**
  * Declarations
  */
-void getInput();
-void writeSolution();
-int getVelocita();
-void getInfos();
-vector<int> getBestPath();
+// void getInput();
+// void writeSolution();
+// int getVelocita();
+// void getInfos();
+// vector<int> getBestPath();
 
 int N;              // numero di citta
 int M;              // numero di pietre
@@ -29,14 +29,15 @@ int S;              // citta di partenza
 int capacita;       // capacità dello zain ehm guanto
 double R;              // energia consumata per unita di tempo
 double vmax, vmin;
+double vcost;
 
 vector<stone> stones;                       // lista (temp!) delle pietre raccolte
-vector<vector<int>> stonesLocation;         // per ogni pietra mi segno (con un array) quali città ce l'hanno
+vector<int> takenStones;                    // di base -1, se raccolgo una pietra metto in che citta l'ho raccolta
+vector<vector<int>> cities;                 // per ogni citta mi segno (con un array) quali pietre ha (gli ID delle pietre)
 int **matrix;                               // matrice di adiacenza
 
 double energia;     // energia RACCOLTA
 int tempoImpiegato; // tempo totale
-
 
 
 /**
@@ -62,15 +63,20 @@ void getInput(){
     }
 
     // dove stanno le pietre?
-    stonesLocation = vector<vector<int>>(M);                // inizializzo l'array di locations
+    cities = vector<vector<int>>();                // inizializzo l'array di locations
+    for(int i=0; i<N; i++){
+        vector<int> row;
+        cities.push_back(row);
+    }
+
     int listlen;
     int tmpCity;
     for(int i=0; i<M; i++){ 
         in >> listlen;
         for (int j=0; j<listlen; j++){
-            // la pietra `i` è presente nella città in[j]
+            // la pietra `i` è presente nella città tmpCity
             in >> tmpCity;
-            stonesLocation[i].push_back(tmpCity);
+            cities[tmpCity].push_back(i);
         }
     }
 
@@ -94,20 +100,13 @@ void getInput(){
         }
     }
 
+    vcost = (vmax-vmin)/capacita;
+    takenStones = vector<int>(M);
+    for(int i=0; i<M; i++){
+        takenStones[i] = -1;
+    }
+
     in.close();
-}
-
-
-void writeSolution(){
-    ofstream out("output.txt");
-    double energiaFinale = energia - R*tempoImpiegato;
-    out << "stuff" << endl;
-    out.close();
-}
-
-
-int getVelocita(int carriedStones){
-    return vmax-(carriedStones*((vmax-vmin)/capacita));
 }
 
 
@@ -146,14 +145,118 @@ void getInfos(){
 }
 
 
+int getVelocita(int carriedStones){
+    return vmax-(carriedStones*vcost);
+}
+
+
+void writeSolution(vector<int> path){
+    ofstream out("output.txt");
+
+    // // calcolo l'energia
+    // double energiaFinale = energia - R*tempoImpiegato;
+    // out << energiaFinale << " " << energia << " " << tempoImpiegato << endl;
+
+    // // lista pietre
+    // for(int i=0; i<M; i++){
+    //     out << takenStones[i] << " ";
+    // }
+    // out << endl;
+
+    // // lista citta
+    // for(int i=0; i<N; i++){
+    //     out << path[i] << " ";
+    // }
+    // out << endl;
+
+    out << "***" << endl;
+
+    out.close();
+    cout << "output done.\n"; 
+}
+
+
+void collectGems(vector<int> &path, vector<int> &distance){
+    // ciclo al contrario
+    int capacitaLeft = capacita;
+    int distsofar = 0;
+    int zetamax, imax;
+    double maxsofar;
+
+    for(int i=0; i<path.size(); i++){
+        cout << path[i] << " " << "[" << distance[i] << "]" << endl;
+    }
+    cout << endl;
+
+    // NON DEVO ANDARE AL CONTRARIO PERCHE COSI PRENDEREI ALLA FINE QUELLE CON LA DISTANZA MINORE
+    // QUANDO INVECE DOVREI PRENDERE QUELLE PIU PESANTI VERSO LA FINE
+
+
+    for(int i=path.size()-2; i>=0; i--){    // -2 perche non parto dall'ultimo, che è la partenza aka S
+        // citta: 1, ho {0,1,2}
+        maxsofar = 0;
+        distsofar += distance[i];           // i e basta perche len(distance) == len(path)-{Sin, Sfin} 
+        zetamax = -100;
+        imax = 0;
+
+        cout << " (citta " << path[i] << ") " << "size " << cities[path[i]].size() << endl;
+        cout << "  dist=" << distance[i] << endl;
+
+        for(int j=0; j<cities[path[i]].size(); j++){
+            stone s = stones[cities[path[i]][j]];
+            cout << "Pietra " << cities[path[i]][j] << endl;
+
+            // controllo se ho gia preso la pietra
+            if(takenStones[cities[path[i]][j]] == -1){
+                // prendo il fattore zeta=e/pd
+                
+                double zeta = ((double) s.energia) / ( s.massa*distance[i] );
+                cout << "ZETA=" << zeta << ", e=" << s.energia << ", m=" << s.massa << endl << endl;
+                if(zeta > zetamax && s.massa<=capacitaLeft){
+                    zetamax = zeta;
+                    imax = j;
+                }
+            }
+        }
+
+        // ho trovato la pietra che tendenzialmente ha il miglior rapporto
+        if(zetamax > 0){
+            // la prendo
+            int stoneIndex = cities[path[i]][imax];
+
+            capacitaLeft -= stones[stoneIndex].massa;
+            
+            // prendo la pietra i
+            energia += stones[stoneIndex].energia;
+
+            // ho raccolto tale pietra in imax citta
+            takenStones[stoneIndex] = imax;
+
+            // calcolo il tempo
+            double v = getVelocita(capacita-capacitaLeft);
+            double t = distance[i]/v;
+            tempoImpiegato += t;
+
+            cout << "Ho preso la pietra " << stoneIndex << " nella citta " << imax << " in tempo " << t << endl;
+        }
+    }
+
+    // writeSolution(path);
+
+}
+
+
 /**
  * Attraverso il grafo e trovo un percorso ottimale.
  * - versione 1: prendo sempre il ramo piu corto [greedy] O(n^2)
+ * - versione 1.1: greedy ma senza controllare l'intera riga(?) O(n^2)--
  * - versione 2: [backtracking]
  */
-vector<int> getBestPath(){
-    vector<int> path;
+void getBestPath(){
+    vector<int> path = vector<int>();
+    vector<int> distance = vector<int>();
     bool visited[N];
+    int remaining = N;
 
     // init
     for(int i=0; i<N; i++){
@@ -165,43 +268,53 @@ vector<int> getBestPath(){
     path.push_back(S);
     visited[S] = true;
 
-    for(int node=S; node<N; node++){
+    for(int node=S; node<N;){            // cosi parto da 0 poi salgo, ma potrei perdermi qualcosa?
         // passo i nodi a fianco
         int min = 1000000;
         int minIndex = 0;
 
         for(int j=0; j<N; j++){
+            if (remaining == 1){
+                // okay ora mi ricongiungo a S
+                min = matrix[node][S];
+                minIndex = S;
+                break;
+            }
             // poi posso evitare di controllare l'intera riga perche so gia che meta/+ sono 0 
-            // cout << "min=" << min << ", Matrix[node][j] = " << matrix[node][j] << endl;
+            cout << "min=" << min << ", Matrix[node][j] = " << matrix[node][j] << " [NODE="<< node << ", J="<< j << endl;
             if (matrix[node][j] != 0 && !visited[j] && min > matrix[node][j]){
-                min = matrix[j][node];
+                min = matrix[node][j];
                 minIndex = j;
             }
         }
+        cout << min << " at index " << minIndex << endl;
         
         // la prossima citta è quella piu breve
         // cout << "minIndex:" << minIndex << endl;
         path.push_back(minIndex);
+        distance.push_back(min);
         visited[minIndex] = true;
-    }
 
-    cout << "PATH=";
-    for(int i=0; i<N; i++){
-        cout << path[i] << " ";
+        node = minIndex;
+        if (minIndex == 0){
+            break;
+        }
+        remaining--;
     }
 
     path.push_back(S);
-    return path;
+    path.resize(N+1);
+    collectGems(path, distance);
 }
+
 
 
 int main(){
     getInput(); // get input
-    getInfos(); // prints basic info bout the graph
+    // getInfos(); // prints basic info bout the graph
 
-    vector<int> path = getBestPath();
+    getBestPath();
     // collectGems(path);
-    writeSolution();
     
     return 0;
 }
