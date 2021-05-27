@@ -3,25 +3,12 @@
 #include <iomanip>      // per i decimali
 #include <fstream>
 using namespace std;
-
-/**
- * Structures
- * (codice di powarts rn)
- */
+#define DEBUG 0
 
 struct stone {
     int energia, massa;
 };
 
-
-/**
- * Declarations
- */
-// void getInput();
-// void writeSolution();
-// int getVelocita();
-// void getInfos();
-// vector<int> getBestPath();
 
 int N;              // numero di citta
 int M;              // numero di pietre
@@ -40,9 +27,8 @@ double energia;     // energia RACCOLTA
 double tempoImpiegato; // tempo totale
 
 
-/**
- * Implementations
- */
+
+
 void getInput(){
     ifstream in("input.txt");
     in >> N >> S;                               // prima riga
@@ -171,10 +157,9 @@ void writeSolution(vector<int> path){
     }
     out << endl;
 
-    out << "***" << endl;
+    out << "***";
 
     out.close();
-    // cout << "output done.\n"; 
 }
 
 
@@ -185,10 +170,14 @@ void collectGems(vector<int> &path, vector<int> &distance){
     int imax;
     double zetamax, maxsofar;
 
-    // for(int i=0; i<path.size(); i++){
-    //     cout << path[i] << " " << "[" << distance[i] << "]" << endl;
-    // }
-    // cout << endl;
+    #if (DEBUG==1)
+    cout << path.size() << path[0] << endl;
+
+    for(int i=0; i<path.size(); i++){
+        cout << path[i] << " " << "[" << distance[i] << "]" << endl;
+    }
+    cout << endl;
+    #endif
 
     // NON DEVO ANDARE AL CONTRARIO PERCHE COSI PRENDEREI ALLA FINE QUELLE CON LA DISTANZA MINORE
     // QUANDO INVECE DOVREI PRENDERE QUELLE PIU PESANTI VERSO LA FINE
@@ -201,28 +190,39 @@ void collectGems(vector<int> &path, vector<int> &distance){
         zetamax = -100;
         imax = 0;
 
-        // cout << " (citta " << path[i] << ") " << "size " << cities[path[i]].size() << endl;
-        // cout << "  dist=" << distance[i] << endl;
+        #if (DEBUG==1)
+        cout << "\n(citta " << path[i] << ") " << "size " << cities[path[i]].size() << endl;
+        cout << "  dist=" << distance[i] << endl;
+        #endif
 
         for(int j=0; j<cities[path[i]].size(); j++){
             stone s = stones[cities[path[i]][j]];
-            // cout << "\nPietra " << cities[path[i]][j] << endl;
+            
+            #if (DEBUG==1)
+            cout << "Pietra " << cities[path[i]][j] << endl;
+            #endif 
 
             // controllo se ho gia preso la pietra
             if(takenStones[cities[path[i]][j]] == -1){
                 // prendo il fattore zeta=e/pd
                 
                 double zeta = ((double) s.energia) / ( s.massa*distance[i] );
-                // cout << "ZETA=" << zeta << ", e=" << s.energia << ", m=" << s.massa << endl << endl;
-                // cout << "   zetamax=" << zetamax << " smassa" << s.massa << " capleft=" << capacitaLeft << endl;
+
+                #if (DEBUG==1)
+                cout << "ZETA=" << zeta << ", e=" << s.energia << ", m=" << s.massa << endl << endl;
+                cout << "   zetamax=" << zetamax << " smassa" << s.massa << " capleft=" << capacitaLeft << endl;
+                #endif
+
                 if(zeta > zetamax && s.massa<=capacitaLeft){
                     zetamax = zeta;
                     imax = j;
                 }
             } 
-            // else {
-            //     cout << "...gia presa" << endl;
-            // }
+            #if (DEBUG==1)
+            else {
+                cout << "...gia presa" << endl;
+            }
+            #endif
         }
 
         // ho trovato la pietra che tendenzialmente ha il miglior rapporto
@@ -243,7 +243,9 @@ void collectGems(vector<int> &path, vector<int> &distance){
             double t = distance[i]/v;
             tempoImpiegato += t;
 
-            // cout << "Ho preso la pietra " << stoneIndex << " nella citta " << path[i] << " in tempo " << t << endl;
+            #if (DEBUG==1)
+            cout << "Ho preso la pietra " << stoneIndex << " nella citta " << path[i] << " in tempo " << t << endl;
+            #endif
         }
     }
 
@@ -277,7 +279,7 @@ void getBestPath(){
     for(int node=S; node<N;){            // cosi parto da 0 poi salgo, ma potrei perdermi qualcosa?
         // passo i nodi a fianco
         int min = 1000000;
-        int minIndex = 0;
+        int minIndex = -1;
 
         for(int j=0; j<N; j++){
             if (remaining == 1){
@@ -286,23 +288,28 @@ void getBestPath(){
                 minIndex = S;
                 break;
             }
+
             // poi posso evitare di controllare l'intera riga perche so gia che meta/+ sono 0 
-            // cout << "min=" << min << ", Matrix[node][j] = " << matrix[node][j] << " [NODE="<< node << ", J="<< j << endl;
+            #if (DEBUG==1)
+            cout << "min=" << min << ", Matrix[node][j] = " << matrix[node][j] << " [NODE="<< node << ", J="<< j << endl;
+            #endif
             if (matrix[node][j] != 0 && !visited[j] && min > matrix[node][j]){
                 min = matrix[node][j];
                 minIndex = j;
             }
         }
-        // cout << min << " at index " << minIndex << endl;
-        
+
         // la prossima citta è quella piu breve
-        // cout << "minIndex:" << minIndex << endl;
+        #if (DEBUG==1)
+        cout << min << " at index " << minIndex << endl;
+        #endif 
+
         path.push_back(minIndex);
         distance.push_back(min);
         visited[minIndex] = true;
 
         node = minIndex;
-        if (minIndex == 0){
+        if (minIndex == -1){
             break;
         }
         remaining--;
