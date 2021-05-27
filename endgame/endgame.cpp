@@ -3,7 +3,7 @@
 #include <iomanip>      // per i decimali
 #include <fstream>
 using namespace std;
-#define DEBUG 0
+#define DEBUG 1
 
 struct stone {
     int energia, massa;
@@ -25,7 +25,6 @@ int **matrix;                               // matrice di adiacenza
 
 double energia;     // energia RACCOLTA
 double tempoImpiegato; // tempo totale
-
 
 
 
@@ -203,7 +202,7 @@ void collectGems(vector<int> &path, vector<int> &distance){
             #endif 
 
             // controllo se ho gia preso la pietra
-            if(takenStones[cities[path[i]][j]] == -1){
+            if(takenStones[cities[path[i]][j]] == -1 && s.energia >= s.massa){
                 // prendo il fattore zeta=e/pd
                 
                 double zeta = ((double) s.energia) / ( s.massa*distsofar );  // th. devo moltiplicare per distsofar perche è la somma delle distanze da qui alla fine
@@ -220,7 +219,7 @@ void collectGems(vector<int> &path, vector<int> &distance){
             } 
             #if (DEBUG==1)
             else {
-                cout << "...gia presa" << endl;
+                cout << "...gia presa o troppo pesante" << endl;
             }
             #endif
         }
