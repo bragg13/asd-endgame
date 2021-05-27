@@ -9,8 +9,8 @@ using namespace std;
 
 struct stone {
     int energia, massa;
+    double goodness;
 };
-
 
 int N;              // numero di citta
 int M;              // numero di pietre
@@ -18,6 +18,8 @@ int S;              // citta di partenza
 int capacita;       // capacità dello zain ehm guanto
 double R;              // energia consumata per unita di tempo
 double vmax, vmin;
+double vcost;
+double avg_goodness, k = 0.8;
 
 vector<int> carriedStones;                  // ogni indice è una citta e mi dice qual è il peso locale trasportato
 vector<stone> stones;                       // lista (temp!) delle pietre raccolte
@@ -27,6 +29,9 @@ int **matrix;                               // matrice di adiacenza
 
 double energia;     // energia RACCOLTA
 
+bool goodStone(stone s){
+    return s.goodness >= k*avg_goodness;
+}
 
 void getInput(){
     ifstream in("input.txt");
@@ -39,13 +44,17 @@ void getInput(){
     
     // massa/energia di ogni pietra
     int m, e;
+    double sum_goodness = 0;
     for(int i=0; i<M; i++){
         in >> m >> e;
         stone s;
         s.energia = e;
         s.massa = m;
+        s.goodness =  ((double) e)/m;
+        sum_goodness += s.goodness;
         stones.push_back(s);
     }
+    avg_goodness = sum_goodness / M;
 
     // dove stanno le pietre?
     cities = vector<vector<int>>();                // inizializzo l'array di locations e carriedStones
@@ -87,6 +96,7 @@ void getInput(){
         }
     }
 
+    vcost = (vmax-vmin)/capacita;
     takenStones = vector<int>(M);
     for(int i=0; i<M; i++){
         takenStones[i] = -1;
@@ -229,7 +239,7 @@ void collectGems(vector<int> &path, vector<int> &distance){
             #endif 
 
             // controllo se ho gia preso la pietra
-            if(takenStones[cities[path[i]][j]] == -1 && s.energia >= s.massa){
+            if(takenStones[cities[path[i]][j]] == -1 && goodStone(s)){
                 // prendo il fattore zeta=e/pd
                 
                 double zeta = ((double) s.energia) / ( s.massa*distsofar );  // th. devo moltiplicare per distsofar perche è la somma delle distanze da qui alla fine
