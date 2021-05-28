@@ -6,6 +6,7 @@ using namespace std;
 #define DEBUG_GETPATH 0
 #define DEBUG_COLLECT 0
 #define DEBUG_WRSOLUT 0
+#define ZETA 1
 
 struct stone {
     int energia, massa;
@@ -19,7 +20,7 @@ int capacita;       // capacità dello zain ehm guanto
 double R;              // energia consumata per unita di tempo
 double vmax, vmin;
 double vcost;
-double avg_goodness, k = 0.8;
+double avg_goodness, avg_mass, kz = 0.95, kg = 0.8;
 
 vector<int> carriedStones;                  // ogni indice è una citta e mi dice qual è il peso locale trasportato
 vector<stone> stones;                       // lista (temp!) delle pietre raccolte
@@ -29,8 +30,17 @@ int **matrix;                               // matrice di adiacenza
 
 double energia;     // energia RACCOLTA
 
-bool goodStone(stone s){
-    return s.goodness >= k*avg_goodness;
+double getVelocita(int _carriedStones){
+    return vmax-((_carriedStones*(vmax-vmin))/capacita);
+}
+
+bool goodStone(stone s, int d, int capacita_left){
+    //return s.goodness >= kg*avg_goodness;
+    return (R*d/getVelocita(s.massa + capacita - capacita_left) - s.energia) < (R*d/getVelocita(capacita - capacita_left));
+}
+
+bool similarZeta(double zeta, double zeta_max){
+    return (zeta_max * kz) < zeta;
 }
 
 void getInput(){
@@ -45,15 +55,18 @@ void getInput(){
     // massa/energia di ogni pietra
     int m, e;
     double sum_goodness = 0;
+    double sum_mass = 0;
     for(int i=0; i<M; i++){
         in >> m >> e;
         stone s;
         s.energia = e;
         s.massa = m;
+        sum_mass += m;
         s.goodness =  ((double) e)/m;
         sum_goodness += s.goodness;
         stones.push_back(s);
     }
+    avg_mass = sum_mass / M;
     avg_goodness = sum_goodness / M;
 
     // dove stanno le pietre?
@@ -139,12 +152,6 @@ void getInfos(){
     }
     cout << "==========" << endl;
 }
-
-
-double getVelocita(int _carriedStones){
-    return vmax-((_carriedStones*(vmax-vmin))/capacita);
-}
-
 
 void writeSolution(vector<int> &path, vector<int> &distance){
     ofstream out("output.txt");
@@ -239,7 +246,7 @@ void collectGems(vector<int> &path, vector<int> &distance){
             #endif 
 
             // controllo se ho gia preso la pietra
-            if(takenStones[cities[path[i]][j]] == -1 && goodStone(s)){
+            if(takenStones[cities[path[i]][j]] == -1 && goodStone(s, distsofar, capacitaLeft)){
                 // prendo il fattore zeta=e/pd
                 
                 double zeta = ((double) s.energia) / ( s.massa*distsofar );  // th. devo moltiplicare per distsofar perche è la somma delle distanze da qui alla fine
@@ -250,8 +257,13 @@ void collectGems(vector<int> &path, vector<int> &distance){
                 #endif
 
                 if(zeta > zetamax && s.massa<=capacitaLeft){
+                    
                     zetamax = zeta;
                     imax = j;
+                } else if(similarZeta(zeta, zetamax) && s.massa<=capacitaLeft){
+                    if(stones[imax].massa < s.massa){
+                        imax = j;
+                    }
                 }
             } 
             #if (DEBUG_COLLECT==1)
