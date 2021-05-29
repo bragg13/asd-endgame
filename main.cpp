@@ -29,7 +29,7 @@ int capacita;       // capacità dello zain ehm guanto
 double R;              // energia consumata per unita di tempo
 double vmax, vmin;
 double vcost;
-double avg_goodness, avg_mass, kz = 0.95, kg = 0.92;
+double avg_goodness, avg_mass, kz = 0.95, kg = 0.97;
 
 vector<int> carriedStones;                  // ogni indice è una citta e mi dice qual è il peso locale trasportato
 vector<stone> stones;                       // lista (temp!) delle pietre raccolte
