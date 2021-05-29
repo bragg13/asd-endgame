@@ -3,12 +3,15 @@
 #include <iomanip>      // per i decimali
 #include <fstream>
 using namespace std;
-#define DEBUG 0
+#define DEBUG_GETPATH 0
+#define DEBUG_COLLECT 0
+#define DEBUG_WRSOLUT 0
+#define ZETA 1
 
 struct stone {
     int energia, massa;
+    double goodness;
 };
-
 
 int N;              // numero di citta
 int M;              // numero di pietre
@@ -17,6 +20,7 @@ int capacita;       // capacità dello zain ehm guanto
 double R;              // energia consumata per unita di tempo
 double vmax, vmin;
 double vcost;
+double avg_goodness, avg_mass, kz = 0.95, kg = 0.8;
 
 vector<int> carriedStones;                  // ogni indice è una citta e mi dice qual è il peso locale trasportato
 vector<stone> stones;                       // lista (temp!) delle pietre raccolte
@@ -26,6 +30,18 @@ int **matrix;                               // matrice di adiacenza
 
 double energia;     // energia RACCOLTA
 
+double getVelocita(int _carriedStones){
+    return vmax-((_carriedStones*(vmax-vmin))/capacita);
+}
+
+bool goodStone(stone s, int d, int capacita_left){
+    //return s.goodness >= kg*avg_goodness;
+    return (R*d/getVelocita(s.massa + capacita - capacita_left) - s.energia) < (R*d/getVelocita(capacita - capacita_left));
+}
+
+bool similarZeta(double zeta, double zeta_max){
+    return (zeta_max * kz) < zeta;
+}
 
 void getInput(){
     ifstream in("input.txt");
@@ -38,13 +54,20 @@ void getInput(){
     
     // massa/energia di ogni pietra
     int m, e;
+    double sum_goodness = 0;
+    double sum_mass = 0;
     for(int i=0; i<M; i++){
         in >> m >> e;
         stone s;
         s.energia = e;
         s.massa = m;
+        sum_mass += m;
+        s.goodness =  ((double) e)/m;
+        sum_goodness += s.goodness;
         stones.push_back(s);
     }
+    avg_mass = sum_mass / M;
+    avg_goodness = sum_goodness / M;
 
     // dove stanno le pietre?
     cities = vector<vector<int>>();                // inizializzo l'array di locations e carriedStones
@@ -130,36 +153,42 @@ void getInfos(){
     cout << "==========" << endl;
 }
 
-
-double getVelocita(int _carriedStones){
-    return vmax-((_carriedStones*(vmax-vmin))/capacita);
-}
-
-
 void writeSolution(vector<int> &path, vector<int> &distance){
     ofstream out("output.txt");
 
     // calcolo il tempo ripercorrendo la path
     int pesosofar = 0;
-    double tempoImpiegato;
+    double tempoImpiegato=0.0;
+    
     for(int i=0; i<N; i++){
         int citta = path[i];
-        double v = getVelocita(pesosofar+carriedStones[citta]);
+        double v = capacita==0 ? vmax : getVelocita(pesosofar+carriedStones[citta]);
         double t = distance[i]/v;
         tempoImpiegato += t;
         pesosofar += carriedStones[citta];
 
-        // cout << "Citta: " << path[i] << " Peso: " << pesosofar << " Velocita:" << v << " Tempo:" << t << endl;
-
+        #if (DEBUG_WRSOLUT==1)
+        cout << "Citta: " << path[i] << " Peso: " << pesosofar << " Velocita:" << v << " Tempo:" << t << endl;
+        #endif
     }
 
     // calcolo l'energia
-    // cout << "energia " << energia << endl;
-    // cout << "tempoImpiegato " << tempoImpiegato << endl;
-    double energiaFinale = energia - (R*tempoImpiegato);
-    out << scientific << setprecision(10) << energiaFinale << " "; 
-    out << scientific << setprecision(10) << energia << " "; 
-    out << scientific << setprecision(10) << tempoImpiegato << endl; 
+    #if (DEBUG_WRSOLUT==1)
+    cout << "energia " << energia << endl;
+    cout << "tempoImpiegato " << tempoImpiegato << endl;
+    #endif
+
+    // caso limite: capacità=0
+    // if(capacita == 0){
+    //     out << scientific << setprecision(10) << 0.00 << " "; 
+    //     out << scientific << setprecision(10) << 0.00 << " "; 
+    //     out << scientific << setprecision(10) << 0.00 << endl; 
+    // } else {
+        double energiaFinale = energia - (R*tempoImpiegato);
+        out << scientific << setprecision(10) << energiaFinale << " "; 
+        out << scientific << setprecision(10) << energia << " "; 
+        out << scientific << setprecision(10) << tempoImpiegato << endl; 
+    // }
 
     // lista pietre
     for(int i=0; i<M; i++){
@@ -186,7 +215,7 @@ void collectGems(vector<int> &path, vector<int> &distance){
     int imax;
     double zetamax, maxsofar;
 
-    #if (DEBUG==1)
+    #if (DEBUG_COLLECT==1)
     cout << path.size() << path[0] << endl;
 
     for(int i=0; i<path.size(); i++){
@@ -204,7 +233,7 @@ void collectGems(vector<int> &path, vector<int> &distance){
         zetamax = -100;
         imax = 0;
 
-        #if (DEBUG==1)
+        #if (DEBUG_COLLECT==1)
         cout << "\n(citta " << path[i] << ") " << "size " << cities[path[i]].size() << endl;
         cout << "  dist=" << distance[i] << endl;
         #endif
@@ -212,27 +241,32 @@ void collectGems(vector<int> &path, vector<int> &distance){
         for(int j=0; j<cities[path[i]].size(); j++){
             stone s = stones[cities[path[i]][j]];
             
-            #if (DEBUG==1)
+            #if (DEBUG_COLLECT==1)
             cout << "Pietra " << cities[path[i]][j] << endl;
             #endif 
 
             // controllo se ho gia preso la pietra
-            if(takenStones[cities[path[i]][j]] == -1 && s.energia >= s.massa){
+            if(takenStones[cities[path[i]][j]] == -1 && goodStone(s, distsofar, capacitaLeft)){
                 // prendo il fattore zeta=e/pd
                 
                 double zeta = ((double) s.energia) / ( s.massa*distsofar );  // th. devo moltiplicare per distsofar perche è la somma delle distanze da qui alla fine
 
-                #if (DEBUG==1)
+                #if (DEBUG_COLLECT==1)
                 cout << "ZETA=" << zeta << ", e=" << s.energia << ", m=" << s.massa << endl << endl;
                 cout << "   zetamax=" << zetamax << " smassa" << s.massa << " capleft=" << capacitaLeft << endl;
                 #endif
 
                 if(zeta > zetamax && s.massa<=capacitaLeft){
+                    
                     zetamax = zeta;
                     imax = j;
+                } else if(similarZeta(zeta, zetamax) && s.massa<=capacitaLeft){
+                    if(stones[imax].massa < s.massa){
+                        imax = j;
+                    }
                 }
             } 
-            #if (DEBUG==1)
+            #if (DEBUG_COLLECT==1)
             else {
                 cout << "...gia presa o troppo pesante" << endl;
             }
@@ -256,7 +290,7 @@ void collectGems(vector<int> &path, vector<int> &distance){
 
             
 
-            #if (DEBUG==1)
+            #if (DEBUG_COLLECT==1)
             cout << "Ho preso la pietra " << stoneIndex << " nella citta " << path[i] << endl;
             #endif
         }
@@ -303,7 +337,7 @@ void getBestPath(){
             }
 
             // poi posso evitare di controllare l'intera riga perche so gia che meta/+ sono 0 
-            #if (DEBUG==1)
+            #if (DEBUG_GETPATH==1)
             cout << "min=" << min << ", Matrix[node][j] = " << matrix[node][j] << " [NODE="<< node << ", J="<< j << endl;
             #endif
             if (matrix[node][j] != 0 && !visited[j] && min > matrix[node][j]){
@@ -313,7 +347,7 @@ void getBestPath(){
         }
 
         // la prossima citta è quella piu breve
-        #if (DEBUG==1)
+        #if (DEBUG_GETPATH==1)
         cout << min << " at index " << minIndex << endl;
         #endif 
 
