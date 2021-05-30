@@ -2,6 +2,7 @@
 #include <vector>
 #include <iomanip>      // per i decimali
 #include <fstream>
+#include <cmath>
 using namespace std;
 #define DEBUG_GETPATH 0
 #define DEBUG_COLLECT 0
@@ -10,7 +11,15 @@ using namespace std;
 
 struct stone {
     int energia, massa;
+    int quantita;   
     double goodness;
+
+    stone(){}
+
+    stone(int e, int m){
+        energia = e;
+        massa = m;
+    }
 };
 
 int N;              // numero di citta
@@ -20,7 +29,7 @@ int capacita;       // capacità dello zain ehm guanto
 double R;              // energia consumata per unita di tempo
 double vmax, vmin;
 double vcost;
-double avg_goodness, avg_mass, kz = 0.95, kg = 0.8;
+double avg_goodness, avg_mass, kz = 0.98, kg = 0.7;
 
 vector<int> carriedStones;                  // ogni indice è una citta e mi dice qual è il peso locale trasportato
 vector<stone> stones;                       // lista (temp!) delle pietre raccolte
@@ -42,6 +51,14 @@ bool goodStone(stone s, int d, int capacita_left){
 bool similarZeta(double zeta, double zeta_max){
     return (zeta_max * kz) < zeta;
 }
+
+double checkRarity(stone s1, stone s2){
+    double rS1 = (pow(s1.massa, 2)*s1.energia)/(s1.quantita);
+    double rS2 = (pow(s2.massa, 2)*s2.energia)/(s2.quantita);
+
+    return (rS1>rS2) ? 1 : 2;       // return the rarest index
+}
+
 
 void getInput(){
     ifstream in("input.txt");
@@ -86,6 +103,7 @@ void getInput(){
             // la pietra `i` è presente nella città tmpCity
             in >> tmpCity;
             cities[tmpCity].push_back(i);
+            stones[i].quantita++;       // mi salvo quante volte appare questa pietra in giro
         }
     }
 
@@ -118,40 +136,6 @@ void getInput(){
     in.close();
 }
 
-
-void getInfos(){
-    cout << "Numero di città: " << N << endl;
-    cout << "Città di partenza: " << S << endl;
-    
-    cout << "Numero di pietre: " << M << endl;
-    cout << "Capacita' del guanto: " << capacita << endl;
-    
-    // pietre
-    for(int i=0; i<M; i++){
-        cout << "[Pietra] " << i 
-            << ":\n  energia=" << stones[i].energia
-            << "\n  massa=" << stones[i].massa << endl;
-    }
-
-    cout << endl;
-
-    // grafo
-    for(int i=0; i<N; i++){
-        cout << "[Citta] " << i << ":\n"; 
-        for(int j=0; j<N; j++){
-            cout << "  " << i << " to " << j << ": " << matrix[i][j] << endl;
-        }
-    }
-
-    cout << "==========" << endl;
-    for(int i=0; i<N; i++){
-        for(int j=0; j<N; j++){
-            cout << matrix[i][j];
-        }
-        cout << endl;
-    }
-    cout << "==========" << endl;
-}
 
 void writeSolution(vector<int> &path, vector<int> &distance){
     ofstream out("output.txt");
@@ -214,6 +198,7 @@ void collectGems(vector<int> &path, vector<int> &distance){
     int distsofar = 0;
     int imax;
     double zetamax, maxsofar;
+    stone currStone;
 
     #if (DEBUG_COLLECT==1)
     cout << path.size() << path[0] << endl;
@@ -231,6 +216,7 @@ void collectGems(vector<int> &path, vector<int> &distance){
         maxsofar = 0;
         distsofar += distance[i];           // i e basta perche len(distance) == len(path)-{Sin, Sfin} 
         zetamax = -100;
+        currStone = stone(0, 50);           // bad rock
         imax = 0;
 
         #if (DEBUG_COLLECT==1)
@@ -261,9 +247,19 @@ void collectGems(vector<int> &path, vector<int> &distance){
                     zetamax = zeta;
                     imax = j;
                 } else if(similarZeta(zeta, zetamax) && s.massa<=capacitaLeft){
-                    if(stones[imax].massa < s.massa){
+                    if(checkRarity(s, currStone) == 1){
+                        // s is rarer
+                        currStone = s;
+                        zetamax = zeta;
                         imax = j;
+                    } else {
+                        // currStone is rarer
+                        continue;
                     }
+
+                    // if(stones[imax].massa < s.massa){
+                    //     imax = j;
+                    // }
                 }
             } 
             #if (DEBUG_COLLECT==1)
