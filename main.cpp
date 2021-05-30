@@ -6,7 +6,7 @@
 
 using namespace std;
 
-#define DEBUG_GETPATH 1
+#define DEBUG_GETPATH 0
 #define DEBUG_COLLECT 0
 #define DEBUG_WRSOLUT 0
 #define ZETA 1
@@ -367,33 +367,67 @@ void getBestPath(){
             cout << "min=" << min << ", Matrix[node][j] = " << matrix[node][j] << " [NODE="<< node << ", J="<< j << endl;
             #endif
 
-            cout << "j: " << j << " m: " << matrix[node][j] << " v: " << visited[j] << endl;
+            //cout << "j: " << j << " m: " << matrix[node][j] << " v: " << visited[j] << endl;
 
             if(matrix[node][j] != 0 && !visited[j]){
-                
+                //cout << "max: " << max << endl;
+                //cout << "STIMA: 0,0 : " << getStima(distsofar + matrix[node][j], 0, 0) << endl;
                 if(getStima(distsofar + matrix[node][j], 0, 0) > max){
-                    st_index = -1;
-                    max = getStima(distsofar + matrix[node][j], 0, 0);
-                    minIndex = j; min = matrix[node][j];
+                    cout << "ok" << endl;
+                    if(!similarZeta(max, getStima(distsofar + matrix[node][j], 0, 0))){
+                        cout << "ok" << endl;
+                        st_index = -1;
+                        max = getStima(distsofar + matrix[node][j], 0, 0);
+                        minIndex = j; min = matrix[node][j];    curr_mass = 0;
+                    } else {
+                        if(curr_mass == 0){
+                            if(matrix[node][j] < min){
+                                st_index = -1;
+                                max = getStima(distsofar + matrix[node][j], 0, 0);
+                                minIndex = j; min = matrix[node][j]; curr_mass = 0;
+                            }
+                        }
+
+                    }
                 }
                 for(int st_i = 0;st_i < cities[j].s.size(); st_i++){
                     cout << "st_i: " << st_i << endl;
                     s = stones[cities[j].s[st_i]];
                     if(takenStones[cities[j].s[st_i]] == -1 && goodStone(s, distsofar + matrix[node][j], capacitaLeft)){
-                        if(getStima(distsofar + matrix[node][j], s.massa, s.massa) > max)
+                        if(getStima(distsofar + matrix[node][j], s.massa, s.energia) > max)
                         {
-                            st_index = cities[j].s[st_i];
-                            max = getStima(distsofar + matrix[node][j],
-                                stones[st_index].massa,
-                                stones[st_index].energia);
-                            minIndex = j;   min = matrix[node][j];
+                            if(similarZeta(max, getStima(distsofar + matrix[node][j], s.massa, s.energia))){
+                                if(s.massa > curr_mass){
+                                    st_index = cities[st_index].s[st_i];
+                                    max = getStima(distsofar + matrix[node][j],
+                                        stones[st_index].massa,
+                                        stones[st_index].energia);
+                                    minIndex = j;   min = matrix[node][j];
+                                    curr_mass = stones[st_index].massa;
+                                }
+                            } else {
+                                st_index = cities[j].s[st_i];
+                                max = getStima(distsofar + matrix[node][j],
+                                    stones[st_index].massa,
+                                    stones[st_index].energia);
+                                minIndex = j;   min = matrix[node][j];
+                                    curr_mass = stones[st_index].massa;
+                            }
+                        } else if(similarZeta(getStima(distsofar + matrix[node][j], s.massa, s.energia), max)){
+                            if(s.massa > curr_mass){
+                                st_index = cities[st_index].s[st_i];
+                                max = getStima(distsofar + matrix[node][j],
+                                    stones[st_index].massa,
+                                    stones[st_index].energia);
+                                minIndex = j;   min = matrix[node][j];
+                                curr_mass = stones[st_index].massa;
+                            }
                         }
                         
                     }
                     
                 }
             }
-
         }
 
 
