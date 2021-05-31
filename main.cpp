@@ -12,7 +12,7 @@ using namespace std;
 #define ZETA 1
 
 struct citta {
-    int id, mass, energy;
+    int id;
     vector<int> s;
     double max_goodness;
 };
@@ -36,6 +36,7 @@ vector<stone> stones;                       // lista (temp!) delle pietre raccol
 vector<int> takenStones;                    // di base -1, se raccolgo una pietra metto in che citta l'ho raccolta
 vector<citta> cities;                 // per ogni citta mi segno (con un array) quali pietre ha (gli ID delle pietre)
 int **matrix;                               // matrice di adiacenza
+int *zaino;
 
 double energia;     // energia RACCOLTA
 
@@ -50,10 +51,6 @@ bool goodStone(stone s, int d, int capacita_left){
 
 bool similarZeta(double zeta, double zeta_max){
     return (zeta_max * kz) < zeta;
-}
-
-double getStima(int d, int m, int e){
-    return e - R*(d / getVelocita(m));
 }
 
 void getInput(){
@@ -99,10 +96,8 @@ void getInput(){
             // la pietra `i` è presente nella città tmpCity
             in >> tmpCity;
             cities[tmpCity].s.push_back(i);
-            if(cities[tmpCity].max_goodness < stones[i].goodness){
-                cities[tmpCity].mass = stones[i].massa; cities[tmpCity].energy = stones[i].energia; 
+            if(cities[tmpCity].max_goodness < stones[i].goodness)
                 cities[tmpCity].max_goodness = stones[i].goodness;
-            }
         }
     }
 
@@ -224,6 +219,117 @@ void writeSolution(vector<int> &path, vector<int> &distance){
     out.close();
 }
 
+void getZaino(vector<int> &path, vector<int> & distance){
+    cout << "ok" << endl;
+    int **DP;
+    DP = new int*[M];
+    zaino = new int[M];
+    for(int i = 0;i < M;++i){
+        DP[i] = new int[capacita];
+        DP[i][0] = 0;
+    }
+    for(int c = 0;c < capacita;c++){
+        DP[0][c] = 0;
+    }
+    cout << "initialized..." << endl;
+    for(int i = 1;i < M;++i){
+        for(int c = 1;c < capacita;++c){
+            //cout << "i: " << i << " c: " << c <<endl;
+            if(stones[i].massa < c){
+                int max = DP[i-1][c-stones[i].massa] + stones[i].energia;
+                if(DP[i-1][c] > max){
+                    max = DP[i-1][c];
+                }
+
+                DP[i][c] = max;
+            } else {
+                DP[i][c] = DP[i - 1][c];
+            }
+        }
+    }
+    cout << "DP built" << endl;
+    int c = capacita - 1;
+    int i = M - 1;
+    while(i >= 0 && c >= 0){
+        //cout << "i: " << i << " c: " << c <<endl;
+        if(i > 0){
+            if(DP[i][c] == DP[i-1][c]){
+                zaino[i] = 0;
+            } else{
+                zaino[i] = 1;
+                c -= stones[i].massa;
+            }
+        } else if(stones[i].massa < c){
+            zaino[i] = 1;
+            c -= stones[i].massa;
+        }
+        --i;
+    }
+    cout << "zaino built" << endl;
+    int capacitaLeft = capacita;
+    int distsofar = 0;
+    int imax;
+    double zetamax, maxsofar;
+
+    for(int i = path.size() - 2;i >= 0; i--){
+        maxsofar = 0;
+        distsofar += distance[i];
+        zetamax = -100;
+        imax = 0;
+
+        for(int j = 0;j < cities[path[i]].s.size();++j){
+            int st_i = cities[path[i]].s[j];
+            stone s = stones[cities[path[i]].s[j]];
+            
+            #if (DEBUG_COLLECT==1)
+            cout << "Pietra " << cities[path[i]][j] << endl;
+            #endif 
+
+            // controllo se ho gia preso la pietra
+            if(takenStones[cities[path[i]].s[j]] == -1 && zaino[st_i] == 1){
+                // prendo il fattore zeta=e/pd
+                
+                double zeta = s.massa;  // th. devo moltiplicare per distsofar perche è la somma delle distanze da qui alla fine
+
+                #if (DEBUG_COLLECT==1)
+                cout << "ZETA=" << zeta << ", e=" << s.energia << ", m=" << s.massa << endl << endl;
+                cout << "   zetamax=" << zetamax << " smassa" << s.massa << " capleft=" << capacitaLeft << endl;
+                #endif
+
+                if(zeta > zetamax && s.massa<=capacitaLeft){
+                    zetamax = zeta;
+                    imax = j;
+                }
+            } 
+        }
+
+
+        // ho trovato la pietra che tendenzialmente ha il miglior rapporto
+        if(zetamax > 0){
+            // la prendo
+            int stoneIndex = cities[path[i]].s[imax];
+
+            capacitaLeft -= stones[stoneIndex].massa;
+            
+            // prendo la pietra i
+            energia += stones[stoneIndex].energia;
+
+            // ho raccolto tale pietra in imax citta
+            takenStones[stoneIndex] = path[i];     // path[i] è la citta in cui sono
+
+            carriedStones[path[i]] = stones[stoneIndex].massa;
+
+            
+
+            #if (DEBUG_COLLECT==1)
+            cout << "Ho preso la pietra " << stoneIndex << " nella citta " << path[i] << endl;
+            #endif
+        }
+    }
+
+    writeSolution(path, distance);
+}
+
 
 void collectGems(vector<int> &path, vector<int> &distance){
     // ciclo al contrario
@@ -328,11 +434,7 @@ void getBestPath(){
     vector<int> distance = vector<int>();
     bool visited[N];
     int remaining = N;
-
-    int capacitaLeft = capacita;
-    int distsofar = 0;
-    int imax; double zetamax, maxsofar;
-
+    double avg_d = 0;
 
     // init
     for(int i=0; i<N; i++){
@@ -348,13 +450,10 @@ void getBestPath(){
     for(int node=S; node<N;){            // cosi parto da 0 poi salgo, ma potrei perdermi qualcosa?
         // passo i nodi a fianco
         double dmin = 1000000;
-        double max = -1000000;
-        int min = 1000000;  int curr_mass = -1;
-        int minIndex = -1; stone s; int st_index = -1;
-
+        int min = 1000000; double e_ratio;
+        int minIndex = -1;
 
         for(int j=0; j<N; j++){
-
             if (remaining == 1){
                 // okay ora mi ricongiungo a S
                 min = matrix[node][S];
@@ -367,70 +466,62 @@ void getBestPath(){
             cout << "min=" << min << ", Matrix[node][j] = " << matrix[node][j] << " [NODE="<< node << ", J="<< j << endl;
             #endif
 
-            //cout << "j: " << j << " m: " << matrix[node][j] << " v: " << visited[j] << endl;
 
-            if(matrix[node][j] != 0 && !visited[j]){
-                //cout << "max: " << max << endl;
-                //cout << "STIMA: 0,0 : " << getStima(distsofar + matrix[node][j], 0, 0) << endl;
-                if(getStima(distsofar + matrix[node][j], 0, 0) > max){
-                    cout << "ok" << endl;
-                    if(!similarZeta(max, getStima(distsofar + matrix[node][j], 0, 0))){
-                        cout << "ok" << endl;
-                        st_index = -1;
-                        max = getStima(distsofar + matrix[node][j], 0, 0);
-                        minIndex = j; min = matrix[node][j];    curr_mass = 0;
-                    } else {
-                        if(curr_mass == 0){
-                            if(matrix[node][j] < min){
-                                st_index = -1;
-                                max = getStima(distsofar + matrix[node][j], 0, 0);
-                                minIndex = j; min = matrix[node][j]; curr_mass = 0;
-                            }
+            if (matrix[node][j] != 0 && !visited[j]){
+
+                if(min >= matrix[node][j]){
+                    e_ratio = ((double)min )/ matrix[node][j];
+                    if(min * k_edge < matrix[node][j]){
+                        if(cities[minIndex].max_goodness * e_ratio < cities[j].max_goodness ){
+                            min = matrix[node][j];
+                            minIndex = j;
                         }
-
+                    } else {
+                        min = matrix[node][j]; 
+                        minIndex = j;
+                    }
+                } else if(min >= k_edge * matrix[node][j]){
+                    e_ratio = ((double)matrix[node][j]) / min;
+                    if(min > matrix[node][j]){
+                        min = matrix[node][j];
+                        minIndex = j;
+                    } else {
+                        if(cities[minIndex].max_goodness * e_ratio < cities[j].max_goodness){
+                            min = matrix[node][j];
+                            minIndex = j;
+                        }
                     }
                 }
-                for(int st_i = 0;st_i < cities[j].s.size(); st_i++){
-                    cout << "st_i: " << st_i << endl;
-                    s = stones[cities[j].s[st_i]];
-                    if(takenStones[cities[j].s[st_i]] == -1 && goodStone(s, distsofar + matrix[node][j], capacitaLeft)){
-                        if(getStima(distsofar + matrix[node][j], s.massa, s.energia) > max)
-                        {
-                            if(similarZeta(max, getStima(distsofar + matrix[node][j], s.massa, s.energia))){
-                                if(s.massa > curr_mass){
-                                    st_index = cities[st_index].s[st_i];
-                                    max = getStima(distsofar + matrix[node][j],
-                                        stones[st_index].massa,
-                                        stones[st_index].energia);
-                                    minIndex = j;   min = matrix[node][j];
-                                    curr_mass = stones[st_index].massa;
-                                }
-                            } else {
-                                st_index = cities[j].s[st_i];
-                                max = getStima(distsofar + matrix[node][j],
-                                    stones[st_index].massa,
-                                    stones[st_index].energia);
-                                minIndex = j;   min = matrix[node][j];
-                                    curr_mass = stones[st_index].massa;
-                            }
-                        } else if(similarZeta(getStima(distsofar + matrix[node][j], s.massa, s.energia), max)){
-                            if(s.massa > curr_mass){
-                                st_index = cities[st_index].s[st_i];
-                                max = getStima(distsofar + matrix[node][j],
-                                    stones[st_index].massa,
-                                    stones[st_index].energia);
-                                minIndex = j;   min = matrix[node][j];
-                                curr_mass = stones[st_index].massa;
-                            }
+                 /*else if(min == matrix[node][j] / pow(cities[j].max_goodness + 1, 2)){
+                    bestCities.push_back(j);
+                }*/
+            }
+        }
+    /*
+        for(int i : bestCities){
+            int min = 10000000;
+            if (remaining-1 == 1){
+                if(matrix[i][S] < min){
+                    min = matrix[i][S];
+                    minIndex = S;
+                }
+            } else {
+
+                // poi posso evitare di controllare l'intera riga perche so gia che meta/+ sono 0 
+                #if (DEBUG_GETPATH==1)
+                cout << "min=" << min << ", Matrix[node][j] = " << matrix[node][j] << " [NODE="<< node << ", J="<< j << endl;
+                #endif
+                for(int j = 0;j < N;++j){
+                    if (matrix[i][j] != 0 && !visited[j]){
+                        if(min > matrix[i][j]){
+                            min = matrix[i][j];
+                            minIndex = i;
                         }
-                        
                     }
-                    
                 }
             }
         }
-
-
+*/
         // la prossima citta è quella piu breve
         #if (DEBUG_GETPATH==1)
         cout << min << " at index " << minIndex << endl;
@@ -438,13 +529,8 @@ void getBestPath(){
 
         path.push_back(minIndex);
         distance.push_back(min);
+        avg_d += min;
         visited[minIndex] = true;
-        if(st_index > -1){ // se ho preso una pietra
-            takenStones[st_index] = minIndex;
-            capacitaLeft -= stones[st_index].massa;
-            energia += stones[st_index].energia;
-            carriedStones[minIndex] = stones[st_index].massa;
-        }
 
         node = minIndex;
         if (minIndex == -1){
@@ -452,11 +538,14 @@ void getBestPath(){
         }
         remaining--;
     }
+    avg_d /= N;
 
     path.push_back(S);
     path.resize(N+1);
-    //collectGems(path, distance);
-    writeSolution(path, distance);
+    if((R * avg_d) / vmin < 0.1)
+        getZaino(path, distance);
+    else
+        collectGems(path, distance);
 }
 
 
