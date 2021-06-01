@@ -33,8 +33,8 @@ double kz = 0.95;           // coefficiente di somiglianza per Zeta
 double k_edge = 1;          // ?
 double avg_goodness, avg_mass;
 
-int useZaino = 1500;        // ?
-int n_stones;               // ?
+int useZaino = 1500;        // variabile usata per considerare quando utilizzare l'approccio 'zaino'
+int n_stones;               // numero totale di pietre presenti nel
 int maxStones = 6000000;    // ?
 int sub = 100;              // ?
 
@@ -43,11 +43,11 @@ vector<stone> stones;       // lista delle pietre raccolte
 vector<int> takenStones;    // di base -1, se raccolgo una pietra metto in che citta l'ho raccolta
 vector<citta> cities;       // per ogni citta mi segno (con un array) quali pietre ha (gli ID delle pietre)
 int **matrix;               // matrice di adiacenza
-int *zaino;                 // ?
+int *zaino;                 // vettore di dimensione M restituisce, dato l'indice di una pietra, 1 se fa parte dello zaino ottimale, 0 altrimenti 
 
 
 /**
- * 
+ * calcola la velocita dato il peso totale delle pietre nel guanto
  */
 double getVelocita(int _carriedStones){
     return vmax-((_carriedStones*(vmax-vmin))/capacita);
@@ -55,7 +55,7 @@ double getVelocita(int _carriedStones){
 
 
 /**
- * 
+ * restituisce true se il consumo comportato dalla pietra sia minore rispetto alla sua energia, false altrimenti
  */
 bool goodStone(stone s, int d, int capacita_left){
     //return s.goodness >= kg*avg_goodness;
@@ -64,7 +64,7 @@ bool goodStone(stone s, int d, int capacita_left){
 
 
 /**
- * 
+ *  date due tuple restituisce quella con una stone con goodness maggiore
  */
 bool betterStone(const tuple<stone, int> &a, const tuple<stone, int> &b){
     return get<0>(a).goodness > get<0>(b).goodness;
@@ -72,7 +72,7 @@ bool betterStone(const tuple<stone, int> &a, const tuple<stone, int> &b){
 
 
 /**
- * 
+ * restituisce true se zeta rientra nei limiti di tolleranza
  */
 bool similarZeta(double zeta, double zeta_max){
     return (zeta_max * kz) < zeta;
@@ -256,24 +256,24 @@ void writeSolution(vector<int> &path, vector<int> &distance){
 
 
 /**
- * ?
+ * affronta il problema dello zaino con un approccio greedy, riempiendo lo zaino con le pietre con goodness maggiore
  */
 void greedyZaino(vector<int> &path, vector<int> & distance){
     int *zaino = new int[M];
-    vector< tuple<stone, int> > s;
+    vector< tuple<stone, int> > s;                  //contiene tuple<pietra, indice>
     for(int i = 0;i < stones.size();i++){
         s.push_back(make_tuple(stones[i], i));
-        zaino[i] = 0;
+        zaino[i] = 0;                               //inizializzo lo zaino in modo che ogni pietra non ne faccia parte
     }
 
-    sort(s.begin(), s.end(), betterStone);
-    int cLeft = capacita;
-    for(int i = 0;i < s.size();++i){
+    sort(s.begin(), s.end(), betterStone);          //ordino s per goodness O(nlogn)
+    int cLeft = capacita;                           //capacita rimanente
+    for(int i = 0;i < s.size();++i){                //riempio lo zaino
         if(cLeft >= get<0>(s[i]).massa){
             zaino[get<1>(s[i])] = 1;
             cLeft -=  get<0>(s[i]).massa;
-        } else if(cLeft <= 0 - (cLeft/10)){
-            break;
+        } else if(cLeft <= 0 - (cLeft/10)){         //inserisco un 10% di pietre in piu per evitare casi in cui una pietra 
+            break;                                  //non possa essere presa per motivi di conflitto
         }
     }
 
@@ -283,6 +283,7 @@ void greedyZaino(vector<int> &path, vector<int> & distance){
     int imax;
     double zetamax, maxsofar;
 
+    //ciclo analogo a collectGems() per raccogliere le pietre
     for(int i = path.size() - 2;i >= 0; i--){
         maxsofar = 0;
         distsofar += distance[i];
@@ -344,10 +345,10 @@ void greedyZaino(vector<int> &path, vector<int> & distance){
 
 
 /**
- * ?
+ * algoritmo knapsack standard
  */
 void getZaino(vector<int> &path, vector<int> & distance){
-    //cout << "ok" << endl;
+    //inizializzo una tabella DP (M*C)
     int **DP;
     DP = new int*[M];
     zaino = new int[M];
@@ -358,10 +359,10 @@ void getZaino(vector<int> &path, vector<int> & distance){
     for(int c = 0;c < capacita;c++){
         DP[0][c] = 0;
     }
-    //cout << "initialized..." << endl;
+    
+    //per ogni indice dela tabella calcolo il profitto (energia) massimo
     for(int i = 1;i < M;++i){
         for(int c = 1;c < capacita;++c){
-            //cout << "i: " << i << " c: " << c <<endl;
             if(stones[i].massa < c){
                 int max = DP[i-1][c-stones[i].massa] + stones[i].energia;
                 if(DP[i-1][c] > max){
@@ -374,11 +375,11 @@ void getZaino(vector<int> &path, vector<int> & distance){
             }
         }
     }
-    //cout << "DP built" << endl;
+    
+    //popolo lo zaino con la soluzione
     int c = capacita - 1;
     int i = M - 1;
     while(i >= 0 && c >= 0){
-        //cout << "i: " << i << " c: " << c <<endl;
         if(i > 0){
             if(DP[i][c] == DP[i-1][c]){
                 zaino[i] = 0;
@@ -392,7 +393,8 @@ void getZaino(vector<int> &path, vector<int> & distance){
         }
         --i;
     }
-    //cout << "zaino built" << endl;
+    
+    //ciclo analogamente a come fatto in collectGems() per raccogliere le pietre
     int capacitaLeft = capacita;
     int distsofar = 0;
     int imax;
@@ -594,28 +596,9 @@ void getBestPath(){
 
             if (matrix[node][j] != 0 && !visited[j]){
 
-                if(min >= matrix[node][j]){
-                    e_ratio = ((double)min )/ matrix[node][j];
-                    if(min * k_edge < matrix[node][j]){
-                        if(cities[minIndex].max_goodness * e_ratio < cities[j].max_goodness ){
-                            min = matrix[node][j];
-                            minIndex = j;
-                        }
-                    } else {
-                        min = matrix[node][j]; 
-                        minIndex = j;
-                    }
-                } else if(min >= k_edge * matrix[node][j]){
-                    e_ratio = ((double)matrix[node][j]) / min;
-                    if(min > matrix[node][j]){
-                        min = matrix[node][j];
-                        minIndex = j;
-                    } else {
-                        if(cities[minIndex].max_goodness * e_ratio < cities[j].max_goodness){
-                            min = matrix[node][j];
-                            minIndex = j;
-                        }
-                    }
+                if(min >= matrix[node][j]){     //aggiorno il nodo minimo
+                    min = matrix[node][j]; 
+                    minIndex = j;
                 }
             }
         }
@@ -641,12 +624,12 @@ void getBestPath(){
     path.push_back(S);
     path.resize(N+1);
 
-    // ?
-    if((R * avg_d) / vmin < useZaino && N*capacita > 0){
-        getZaino(path, distance);
+    // se il rapporto tra il consumo, la dimensione degli archi e la velocita e' molto bassa posso ridurre a uno problema dello zaino
+    if((R * avg_d) / vmin < useZaino && N*capacita > 0){    //N*capacita e' la dimensione di un'ipotetica tabella DP,
+        getZaino(path, distance);                           // se questo numero va in overflow, affronto lo zaino con un approccio greedy
     } else if((R*avg_d)/vmin < useZaino ){
         greedyZaino(path, distance);
-    } else
+    } else                                                  //altrimenti affronto con un algoritmo greedy come sopra descritto
         collectGems(path, distance);
 }
 
