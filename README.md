@@ -1,4 +1,6 @@
-# asd-endgame
+# asd-endgame - italiano
+
+English version below.
 
 ## Obiettivo
 
@@ -61,6 +63,74 @@ Quattro righe.
 ## Misc
 
 Compilazione: 
+```c
+/usr/bin/g++ -DEVAL -std=c++11 -O2 -pipe -static -s -o endgame grader.cpp endgame.cpp
+```
+
+
+# asd-endgame - english
+
+## Objective
+
+1. Collect the stones
+ - M stones
+ - different weight
+ - different energy
+
+2. Use the glove
+ - consumes R energy per unit of time
+
+3. Maximize the energy collected
+ $E(p,t) = G(P) - R\cdot T(p,t)$
+
+
+## How the graph is made
+
+- There are N nodes
+ - each node has 0/+ stones
+ - each node is connected to each other by an arc
+ - each bow has a cost
+
+
+## Constrains
+
+- you need to visit each node, at most only once
+- you can only take one stone per node
+- the stone in the starting city can only be taken at the start
+- there is a limit to the weight I can carry
+- I move with speed V
+ - starts from Vmax
+ - arrives at Vmin
+ - proportional to the weight transported
+ - $v = v_{max}-W\cdot \frac{v_{max} - v_{min}}{V}$
+ > **C**: glove capacity
+ > **W**: transported weight
+
+
+## Input
+
+1. N (*city number*) S (*departure city*)
+2. M (*number of stones*) C (*glove capacity*) R (*consumption per unit of time*) $V_{max}$ $V_{min}$
+ #M: m (*mass*) and (*energy*)
+ #2M: availability of stones in cities: each index is a stone
+ - length LA of the availability list
+ - #LA integers, i.e. the IDs of the cities in which this stone is present
+ #N-1: distances between cities
+ - each row (i) gives me the weight of the arcs connected to all the previous nodes
+
+
+## Outputs
+
+Four lines.
+1. E (*final energy*) G (*harvested energy*) T (*time taken*) [double]
+2. which stones were collected in which city, having the stone number as indexes of the list and the city number as value (or -1)
+3. route followed aka list of cities visited (S ..... S)
+4. three asterisks * * *
+
+
+## Misc
+
+Compilation:
 ```c
 /usr/bin/g++ -DEVAL -std=c++11 -O2 -pipe -static -s -o endgame grader.cpp endgame.cpp
 ```
